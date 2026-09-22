@@ -106,59 +106,9 @@ async function manageUsers(){await loadUsers();openM("Utilisateurs",`<div class=
 async function createUser(){let {error}=await sb.rpc("app_create_user",{p_username:newUsername.value,p_display_name:newDisplay.value,p_password:newPassword.value,p_role:newRole.value});if(error)return alert(error.message);await manageUsers()}
 async function resetPw(id){let p=prompt("Nouveau mot de passe :");if(!p)return;let {error}=await sb.rpc("app_reset_password",{p_user:id,p_password:p});if(error)alert(error.message);else alert("Mot de passe modifié")}
 async function toggleUser(id,v){let {error}=await sb.rpc("app_set_user_active",{p_user:id,p_active:v});if(error)alert(error.message);else await manageUsers()}
-async function loadPageExtras(pageId){let [f,c]=await Promise.all([sb.from("page_files").select("id,page_id,kind,file_name,storage_path,uploaded_by,created_at").eq("page_id",pageId).order("created_at"),sb.from("page_comments").select("*,app_users!page_comments_author_id_fkey(display_name,username)").eq("page_id",pageId).order("created_at")]);fileZone.innerHTML=`<hr><h3>Fichiers</h3><div class="grid2"><div><label>📄 Word</label><input id="wordUpload" type="file" accept=".doc,.docx"></div><div><label>📷 Photos</label><input id="photoUpload" type="file" accept="image/*" multiple></div></div><button class="btn" onclick="uploadFiles('${pageId}')">Ajouter les fichiers</button><div>${(f.data||[]).map(x=>`<div class="idea"><b>${x.kind==='word'?'📄':'📷'} ${esc(x.file_name)}</b><button class="btn" onclick="downloadFile('${x.storage_path}','${esc(x.file_name)}')">Télécharger</button> <button class="danger" onclick="deleteFile('${x.id}','${x.storage_path}','${pageId}')">Supprimer</button></div>`).join("")}</div>`;commentZone.innerHTML=`<hr><h3>Commentaires & @mentions</h3><div>${(c.data||[]).map(x=>`<div class="idea"><b>${esc(x.app_users?.display_name||"")}</b>${esc(x.body)}</div>`).join("")}</div><div class="field"><textarea id="newComment" placeholder="Écris un commentaire, par ex. @Julie peux-tu relire ?"></textarea></div><button class="primary" onclick="postComment('${pageId}')">Envoyer</button>`}
+async function loadPageExtras(pageId){let [f,c]=await Promise.all([sb.from("page_files").select("id,page_id,kind,file_name,storage_path,uploaded_by,created_at").eq("page_id",pageId).order("created_at"),sb.from("page_comments").select("*,app_users!page_comments_author_id_fkey(display_name,username)").eq("page_id",pageId).order("created_at")]);fileZone.innerHTML=`<hr><h3>Fichiers</h3><div class="grid2"><div><label>📄 Word</label><input id="wordUpload" type="file" accept=".doc,.docx"></div><div><label>📷 Photos</label><input id="photoUpload" type="file" accept="image/*" multiple></div></div><button class="btn" id="uploadFilesBtn" type="button">Ajouter les fichiers</button><div>${(f.data||[]).map(x=>`<div class="idea"><b>${x.kind==='word'?'📄':'📷'} ${esc(x.file_name)}</b><button class="btn" onclick="downloadFile('${x.storage_path}','${esc(x.file_name)}')">Télécharger</button> <button class="danger" onclick="deleteFile('${x.id}','${x.storage_path}','${pageId}')">Supprimer</button></div>`).join("")}</div>`;document.getElementById("uploadFilesBtn").onclick=()=>uploadFiles(pageId);commentZone.innerHTML=`<hr><h3>Commentaires & @mentions</h3><div>${(c.data||[]).map(x=>`<div class="idea"><b>${esc(x.app_users?.display_name||"")}</b>${esc(x.body)}</div>`).join("")}</div><div class="field"><textarea id="newComment" placeholder="Écris un commentaire, par ex. @Julie peux-tu relire ?"></textarea></div><button class="primary" onclick="postComment('${pageId}')">Envoyer</button>`}
 async function uploadFiles(pageId){let list=[];if(wordUpload.files[0])list.push([wordUpload.files[0],'word']);for(let f of photoUpload.files)list.push([f,'photo']);if(!list.length)return alert('Choisis au moins un fichier.');for(let [f,kind] of list){let path=`${pageId}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;let up=await sb.storage.from('page-files').upload(path,f);if(up.error){alert('Envoi impossible : '+up.error.message);continue}let ins=await sb.from('page_files').insert({page_id:pageId,uploaded_by:appMe.display_name||appMe.username,kind,file_name:f.name,storage_path:path}).select('id,page_id,kind,file_name,storage_path,uploaded_by,created_at').single();if(ins.error){await sb.storage.from('page-files').remove([path]);alert('Le fichier a été envoyé mais son enregistrement a été refusé : '+ins.error.message);continue}}await loadPageExtras(pageId);await loadIssue();renderRail()}
-async function uploadFiles(pageId){
-  const wordInput=document.getElementById('wordUpload');
-  const photoInput=document.getElementById('photoUpload');
-
-  let list=[];
-
-  if(wordInput && wordInput.files[0]){
-    list.push([wordInput.files[0],'word']);
-  }
-
-  if(photoInput){
-    for(const f of photoInput.files){
-      list.push([f,'photo']);
-    }
-  }
-
-  if(!list.length){
-    alert('Choisis au moins un fichier.');
-    return;
-  }
-
-  for(const [f,kind] of list){
-    const path=`${pageId}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-
-    const up=await sb.storage.from('page-files').upload(path,f);
-
-    if(up.error){
-      alert('Envoi impossible : '+up.error.message);
-      return;
-    }
-
-    const ins=await sb.from('page_files').insert({
-      page_id:pageId,
-      uploaded_by:appMe.display_name||appMe.username,
-      kind:kind,
-      file_name:f.name,
-      storage_path:path
-    });
-
-    if(ins.error){
-      await sb.storage.from('page-files').remove([path]);
-      alert('Enregistrement impossible : '+ins.error.message);
-      return;
-    }
-  }
-
-  alert('Fichier ajouté ✓');
-  await loadIssue();
-  await loadPageExtras(pageId);
-  renderRail();
-}
+async function downloadFile(path,name){let r=await sb.storage.from('page-files').download(path);if(r.error)return alert('Téléchargement impossible : '+r.error.message);let url=URL.createObjectURL(r.data),a=document.createElement('a');a.href=url;a.download=name||'fichier';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function deleteFile(id,path,pageId){if(!confirm('Supprimer définitivement ce fichier ?'))return;let st=await sb.storage.from('page-files').remove([path]);if(st.error)return alert('Suppression impossible : '+st.error.message);let db=await sb.from('page_files').delete().eq('id',id);if(db.error)return alert('Le fichier a été supprimé du stockage mais pas de la liste : '+db.error.message);await loadPageExtras(pageId);await loadIssue();renderRail()}
 async function postComment(pageId){let body=newComment.value.trim();if(!body)return;let {data:c,error}=await sb.from('page_comments').insert({page_id:pageId,author_id:appMe.id,body}).select().single();if(error)return alert(error.message);let names=[...body.matchAll(/@([A-Za-z0-9._-]+)/g)].map(m=>m[1].toLowerCase());for(let name of new Set(names)){let u=users.find(x=>x.username.toLowerCase()===name);if(u&&u.id!==appMe.id)await sb.from('notifications').insert({user_id:u.id,actor_id:appMe.id,page_id:pageId,comment_id:c.id,message:body})}await loadPageExtras(pageId);await loadIssue();renderRail()}
 
