@@ -55,7 +55,7 @@ main{max-width:1600px;margin:auto;padding:20px}.hidden{display:none!important}.t
 <script src="config.js"></script>
 <script>
 const CFG=window.SO_CONFIG||{};
-const COLORS={"Autopub":"#64748b","La Une":"#0ea5e9","Le mot du maire":"#2563eb", "L’instant SO":"#0ea5e9","Courrier des lecteurs":"#8b5cf6","Événement":"#ef4444","Actualités":"#14b8a6","Ça avance":"#f97316","À votre service":"#06b6d4","Aînés-seniors":"#a855f7","Dossier":"#e11d48","Patrimoine":"#92400e","SO Local":"#16a34a","J’aime SO":"#db2777","SO fier":"#7c3aed","Culture":"#dc2626","Sport":"#15803d","Tribunes":"#475569","Service public":"#0369a1","À votre écoute":"#9333ea","Cinéma":"#334155","Dîner en ville":"#b45309"};
+const COLORS={"Autopub":"#64748b","La Une":"#0ea5e9","Le mot du maire":"#2563eb", "L’instant SO":"#0ea5e9","Courrier des lecteurs":"#8b5cf6","Événement":"#ef4444","Actualités":"#14b8a6","Ça avance":"#f97316","À votre service":"#06b6d4","Ma vie de quartier":"#10b981", "Aînés-seniors":"#a855f7","Dossier":"#e11d48","Patrimoine":"#92400e","SO Local":"#16a34a","J’aime SO":"#db2777","SO fier":"#7c3aed","Culture":"#dc2626","Sport":"#15803d","Tribunes":"#475569","Service public":"#0369a1","À votre écoute":"#9333ea","Cinéma":"#334155","Dîner en ville":"#b45309"};
 const STATUS=["","A distribuer à un pigiste","En cours d’écriture","En recherche d’infos","En attente de photo","À relire","En relecture service","En relecture Pierre","Relu","En attente de maquettage","Maquetté","Terminé"];
 let sb=null,user=null,issues=[],pages=[],ideas=[],pageFiles=[],current=null,appToken=localStorage.getItem("so_app_token")||"",appMe=null,users=[];
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
