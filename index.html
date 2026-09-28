@@ -92,29 +92,35 @@ function renderRail(){
 function rubOpts(v){return Object.keys(COLORS).map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("")}function statOpts(v){return STATUS.map(x=>`<option value="${x}" ${x===v?"selected":""}>${x||"— Aucun statut —"}</option>`).join("")}
 function pform(p){return `<div class="grid2"><div class="field"><label>Page</label><input id="pn" type="number" value="${p.page_number||""}"></div><div class="field"><label>Rubrique</label><select id="pr">${rubOpts(p.rubric)}</select></div></div><div class="field"><label>Sujet</label><input id="ps" value="${esc(p.subject)}"></div><div class="grid2"><div class="field"><label>Qui écrit l’article ?</label><select id="po"><option value="">—</option>${["Pierre","Camille","Tiphaine","Marine","Rose","Hélène","Giovanni","Marion","Clémence"].map(n=>`<option value="${esc(n)}" ${n===(p.writer||p.owner)?"selected":""}>${esc(n)}</option>`).join("")}</select></div><div class="field"><label>Calibrage (signes)</label><input id="pc" type="number" value="${p.char_count||""}"></div></div><div class="grid2"><div class="field"><label>Statut</label><select id="pst">${statOpts(p.status)}</select></div><div class="field"><label><input id="pd" type="checkbox" ${p.double_page?"checked":""}> Double page</label><br><label><input id="pb" type="checkbox" ${p.brief?"checked":""}> Brève</label></div></div><div class="field"><label>Notes</label><textarea id="pnotes">${esc(p.notes)}</textarea></div><div id="fileZone"></div><div id="commentZone"></div>`}
 function openM(t,b){mtitle.textContent=t;mbody.innerHTML=b;modal.classList.add("on")}function closeM(){modal.classList.remove("on")}
-const LINKED_DOUBLE_RUBRICS=new Set(["so fier","dîner en ville","à votre service"]);
 function normDoubleRubric(v){return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/’/g,"'")}
-function isLinkedDoubleRubric(v){return new Set(["so fier","diner en ville","a votre service"]).has(normDoubleRubric(v))}
+function isLinkedDoubleRubric(v){return ["so fier","diner en ville","a votre service"].includes(normDoubleRubric(v))}
 function getDoublePageMate(page,rubric){
- const ordered=[...pages].sort((a,b)=>(a.position??a.page_number)-(b.position??b.page_number));
- const i=ordered.findIndex(x=>x.id===page.id);
- if(i<0)return null;
- const target=normDoubleRubric(rubric);
- const candidates=[ordered[i-1],ordered[i+1]].filter(Boolean);
- return candidates.find(x=>normDoubleRubric(x.rubric)===target)||null;
+ const ordered=[...pages].sort((a,b)=>(Number(a.page_number)||0)-(Number(b.page_number)||0));
+ const i=ordered.findIndex(x=>x.id===page.id); if(i<0)return null;
+ const target=normDoubleRubric(rubric), prev=ordered[i-1], next=ordered[i+1];
+ // Si l'autre moitié existe déjà, on la retrouve d'abord.
+ if(prev && normDoubleRubric(prev.rubric)===target && Math.abs((+prev.page_number)-(+page.page_number))===1)return prev;
+ if(next && normDoubleRubric(next.rubric)===target && Math.abs((+next.page_number)-(+page.page_number))===1)return next;
+ // Lors de la création de la double page depuis sa première page, la page suivante devient la seconde moitié.
+ if(next && Math.abs((+next.page_number)-(+page.page_number))===1)return next;
+ return null;
 }
-function editPage(id){let p=pages.find(x=>x.id===id);openM("Modifier la page",pform(p));loadPageExtras(id);if(isLinkedDoubleRubric(p.rubric)){pd.checked=true;pd.disabled=true}pr.onchange=()=>{let linked=isLinkedDoubleRubric(pr.value);if(linked){pd.checked=true;pd.disabled=true}else{pd.disabled=false}};save.onclick=async()=>{
- const linked=isLinkedDoubleRubric(pr.value);
- const mate=linked?getDoublePageMate(p,pr.value):null;
- const payload={page_number:+pn.value,rubric:pr.value,subject:ps.value,owner:po.value,writer:po.value,char_count:pc.value?+pc.value:null,status:pst.value,double_page:linked?true:pd.checked,brief:pb.checked,notes:pnotes.value,updated_by:appMe.display_name};
- let r=await sb.from("pages").update(payload).eq("id",id);
- if(r.error){alert(r.error.message);return}
- if(linked&&mate){
-   let r2=await sb.from("pages").update({subject:ps.value,status:pst.value,double_page:true,updated_by:appMe.display_name}).eq("id",mate.id);
-   if(r2.error){alert("La première page a été enregistrée, mais pas la seconde : "+r2.error.message);return}
- }
- closeM();await loadIssue();renderRail()
-};del.onclick=async()=>{if(confirm("Supprimer cette page ?")){await sb.from("pages").delete().eq("id",id);closeM();await loadIssue();renderRail()}}}
+function editPage(id){let p=pages.find(x=>x.id===id);openM("Modifier la page",pform(p));loadPageExtras(id);
+ if(isLinkedDoubleRubric(p.rubric)){pd.checked=true;pd.disabled=true}
+ pr.onchange=()=>{const linked=isLinkedDoubleRubric(pr.value);pd.checked=linked?true:pd.checked;pd.disabled=linked};
+ save.onclick=async()=>{
+   const linked=isLinkedDoubleRubric(pr.value), mate=linked?getDoublePageMate(p,pr.value):null;
+   const payload={page_number:+pn.value,rubric:pr.value,subject:ps.value,owner:po.value,writer:po.value,char_count:pc.value?+pc.value:null,status:pst.value,double_page:linked?true:pd.checked,brief:pb.checked,notes:pnotes.value,updated_by:appMe.display_name};
+   let r=await sb.from("pages").update(payload).eq("id",id); if(r.error){alert(r.error.message);return}
+   if(linked){
+     if(!mate){alert("Impossible de trouver la deuxième page consécutive de cette double page.");return}
+     let r2=await sb.from("pages").update({rubric:pr.value,subject:ps.value,status:pst.value,double_page:true,updated_by:appMe.display_name}).eq("id",mate.id);
+     if(r2.error){alert("La première page a été enregistrée, mais pas la seconde : "+r2.error.message);return}
+   }
+   closeM();await loadIssue();renderRail()
+ };
+ del.onclick=async()=>{if(confirm("Supprimer cette page ?")){await sb.from("pages").delete().eq("id",id);closeM();await loadIssue();renderRail()}}
+}
 async function addPage(){let pos=(Math.max(0,...pages.map(p=>p.position))+1),num=(Math.max(0,...pages.map(p=>p.page_number))+1);let {data}=await sb.from("pages").insert({magazine_id:current,page_number:num,position:pos,rubric:"Actualités",subject:"",status:"",updated_by:appMe.display_name}).select().single();await loadIssue();editPage(data.id)}
 function bindDrag(){let d=null;document.querySelectorAll(".page").forEach(el=>{el.ondragstart=()=>{d=el.dataset.id;el.classList.add("drag")};el.ondragend=()=>el.classList.remove("drag");el.ondragover=e=>{e.preventDefault();el.classList.add("over")};el.ondragleave=()=>el.classList.remove("over");el.ondrop=async e=>{e.preventDefault();el.classList.remove("over");let t=el.dataset.id;if(!d||d===t)return;let arr=[...pages],a=arr.findIndex(x=>x.id===d),b=arr.findIndex(x=>x.id===t),[it]=arr.splice(a,1);arr.splice(b,0,it);await Promise.all(arr.map((p,i)=>sb.from("pages").update({position:i+1}).eq("id",p.id)));await loadIssue();renderRail()}})}
 function renderIdeas(){["arbitrer","garder","reporter"].forEach(c=>document.getElementById(c).innerHTML=ideas.filter(i=>i.column_name===c).map(i=>`<div class="idea" draggable="true" data-idea="${i.id}" onclick="editIdea('${i.id}')"><b>${esc(i.title)}</b><small>${esc(i.rubric)}${i.target_issue?" · "+esc(i.target_issue):""}</small></div>`).join(""));document.querySelectorAll(".idea").forEach(x=>x.ondragstart=e=>e.dataTransfer.setData("idea",x.dataset.idea));document.querySelectorAll(".col").forEach(c=>{c.ondragover=e=>e.preventDefault();c.ondrop=async e=>{e.preventDefault();let id=e.dataTransfer.getData("idea");if(id)await sb.from("ideas").update({column_name:c.dataset.col,updated_by:appMe.display_name}).eq("id",id)}})}
