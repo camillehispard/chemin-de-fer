@@ -86,6 +86,7 @@ function pform(p){return `<div class="grid2"><div class="field"><label>Page</lab
 function openM(t,b){mtitle.textContent=t;mbody.innerHTML=b;modal.classList.add("on")}function closeM(){modal.classList.remove("on")}
 function editPage(id){
   let p=pages.find(x=>x.id===id);
+ alert("spread_id = " + p.spread_id);
   openM("Modifier la page",pform(p));
   loadPageExtras(id);
 
