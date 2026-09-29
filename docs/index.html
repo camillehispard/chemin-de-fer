@@ -211,7 +211,21 @@ function editPage(id){
 
   openM("Modifier la page",pform(p));
   loadPageExtras(id);
+async function setFileTaken(fileId,taken,pageId){
+  let r=await sb
+    .from("page_files")
+    .update({taken:taken})
+    .eq("id",fileId);
 
+  if(r.error){
+    alert("Impossible de modifier l’état du fichier : "+r.error.message);
+    return;
+  }
+
+  await loadPageExtras(pageId);
+  await loadIssue();
+  renderRail();
+}
   save.onclick=async()=>{
     const autoDouble=[
       "SO fier",
