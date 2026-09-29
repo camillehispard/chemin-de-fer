@@ -212,13 +212,19 @@ function editPage(id){
   openM("Modifier la page",pform(p));
   loadPageExtras(id);
 async function setFileTaken(fileId,taken,pageId){
-  let r=await sb
+  let {data,error}=await sb
     .from("page_files")
     .update({taken:taken})
-    .eq("id",fileId);
+    .eq("id",fileId)
+    .select();
 
-  if(r.error){
-    alert("Impossible de modifier l’état du fichier : "+r.error.message);
+  if(error){
+    alert("Impossible de modifier l’état du fichier : "+error.message);
+    return;
+  }
+
+  if(!data || data.length===0){
+    alert("La case n’a pas pu être enregistrée dans Supabase.");
     return;
   }
 
