@@ -306,8 +306,32 @@ issueSelect.onchange=changeIssue;filter.oninput=renderRail;archiveSearch.oninput
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));document.querySelectorAll(".panel").forEach(x=>x.classList.remove("on"));t.classList.add("on");document.getElementById(t.dataset.tab).classList.add("on")});
 
 async function refreshNotifications(){let r=await sb.from("notifications").select("*,app_users!notifications_actor_id_fkey(display_name)").eq("user_id",appMe.id).order("created_at",{ascending:false}).limit(50);window.myNotifs=r.data||[];bellCount.textContent=myNotifs.filter(n=>!n.read_at).length}
-function beep(){try{let a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);g.gain.value=.06;o.frequency.value=880;o.start();o.stop(a.currentTime+.12)}catch(e){}}
-async function showNotifications(){await refreshNotifications();openM("Notifications",`<div>${myNotifs.map(n=>`<div class="idea" onclick="openNotif('${n.id}','${n.page_id||""}')"><b>${n.read_at?"":"● "}${esc(n.app_users?.display_name||"Quelqu’un")}</b>${esc(n.message)}<br><small>${new Date(n.created_at).toLocaleString("fr-FR")}</small></div>`).join("")||"Aucune notification"}</div>`);del.classList.add("hidden");save.classList.add("hidden")}
+function beep(){
+  try{
+    let a=new (window.AudioContext||window.webkitAudioContext)();
+
+    let play=(freq,start,duration,volume)=>{
+      let o=a.createOscillator();
+      let g=a.createGain();
+
+      o.connect(g);
+      g.connect(a.destination);
+
+      o.type="sine";
+      o.frequency.value=freq;
+
+      g.gain.setValueAtTime(volume,a.currentTime+start);
+      g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+start+duration);
+
+      o.start(a.currentTime+start);
+      o.stop(a.currentTime+start+duration);
+    };
+
+    play(660,0,.18,.12);
+    play(880,.12,.30,.10);
+
+  }catch(e){}
+}async function showNotifications(){await refreshNotifications();openM("Notifications",`<div>${myNotifs.map(n=>`<div class="idea" onclick="openNotif('${n.id}','${n.page_id||""}')"><b>${n.read_at?"":"● "}${esc(n.app_users?.display_name||"Quelqu’un")}</b>${esc(n.message)}<br><small>${new Date(n.created_at).toLocaleString("fr-FR")}</small></div>`).join("")||"Aucune notification"}</div>`);del.classList.add("hidden");save.classList.add("hidden")}
 async function openNotif(id,page){await sb.from("notifications").update({read_at:new Date().toISOString()}).eq("id",id);closeM();await refreshNotifications();if(page)editPage(page)}
 async function manageUsers(){await loadUsers();openM("Utilisateurs",`<div class="field"><label>Nom affiché</label><input id="newDisplay"></div><div class="grid2"><div class="field"><label>Identifiant</label><input id="newUsername"></div><div class="field"><label>Mot de passe initial</label><input id="newPassword" type="password"></div></div><div class="field"><label>Rôle</label><select id="newRole"><option value="user">Utilisateur</option><option value="admin">Admin</option></select></div><button class="primary" onclick="createUser()">Créer l’utilisateur</button><hr>${users.map(u=>`<div class="idea"><b>${esc(u.display_name)}</b><small>@${esc(u.username)} · ${u.role} · ${u.active?"actif":"désactivé"}</small> <button class="btn" onclick="resetPw('${u.id}')">Mot de passe</button> <button class="btn" onclick="toggleUser('${u.id}',${!u.active})">${u.active?"Désactiver":"Activer"}</button></div>`).join("")}`);del.classList.add("hidden");save.classList.add("hidden")}
 async function createUser(){let {error}=await sb.rpc("app_create_user",{p_username:newUsername.value,p_display_name:newDisplay.value,p_password:newPassword.value,p_role:newRole.value});if(error)return alert(error.message);await manageUsers()}
