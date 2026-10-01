@@ -263,6 +263,12 @@ function editPage(id){
       }
     }
 
+    const commentBox=document.getElementById("newComment");
+    if(commentBox && commentBox.value.trim()){
+      const commentOk=await savePageComment(id,commentBox.value.trim());
+      if(!commentOk)return;
+    }
+
     closeM();
     await loadIssue();
     renderRail();
@@ -277,7 +283,63 @@ function editPage(id){
     }
   };
 }async function addPage(){let pos=(Math.max(0,...pages.map(p=>p.position))+1),num=(Math.max(0,...pages.map(p=>p.page_number))+1);let {data}=await sb.from("pages").insert({magazine_id:current,page_number:num,position:pos,rubric:"Actualités",subject:"",status:"",updated_by:appMe.display_name}).select().single();await loadIssue();editPage(data.id)}
-function bindDrag(){let d=null;document.querySelectorAll(".page").forEach(el=>{el.ondragstart=()=>{d=el.dataset.id;el.classList.add("drag")};el.ondragend=()=>el.classList.remove("drag");el.ondragover=e=>{e.preventDefault();el.classList.add("over")};el.ondragleave=()=>el.classList.remove("over");el.ondrop=async e=>{e.preventDefault();el.classList.remove("over");let t=el.dataset.id;if(!d||d===t)return;let arr=[...pages],a=arr.findIndex(x=>x.id===d),b=arr.findIndex(x=>x.id===t),[it]=arr.splice(a,1);arr.splice(b,0,it);await Promise.all(arr.map((p,i)=>sb.from("pages").update({position:i+1}).eq("id",p.id)));await loadIssue();renderRail()}})}
+function bindDrag(){
+  let d=null;
+  document.querySelectorAll(".page").forEach(el=>{
+    el.ondragstart=()=>{d=el.dataset.id;el.classList.add("drag")};
+    el.ondragend=()=>el.classList.remove("drag");
+    el.ondragover=e=>{e.preventDefault();el.classList.add("over")};
+    el.ondragleave=()=>el.classList.remove("over");
+    el.ondrop=async e=>{
+      e.preventDefault();
+      el.classList.remove("over");
+      let t=el.dataset.id;
+      if(!d||d===t)return;
+
+      const original=[...pages];
+      const pageSlots=original.map(p=>p.page_number);
+
+      const unitKey=p=>p.spread_id?`spread:${p.spread_id}`:`page:${p.id}`;
+      const units=[];
+      const seen=new Set();
+      for(const p of original){
+        const key=unitKey(p);
+        if(seen.has(key))continue;
+        seen.add(key);
+        units.push({key,pages:original.filter(x=>unitKey(x)===key)});
+      }
+
+      const draggedPage=original.find(p=>p.id===d);
+      const targetPage=original.find(p=>p.id===t);
+      if(!draggedPage||!targetPage)return;
+
+      const fromKey=unitKey(draggedPage);
+      const toKey=unitKey(targetPage);
+      if(fromKey===toKey)return;
+
+      const from=units.findIndex(u=>u.key===fromKey);
+      const to=units.findIndex(u=>u.key===toKey);
+      const [moved]=units.splice(from,1);
+      units.splice(to,0,moved);
+
+      const reordered=units.flatMap(u=>u.pages);
+      const updates=reordered.map((p,i)=>sb.from("pages").update({
+        page_number:pageSlots[i],
+        position:i+1
+      }).eq("id",p.id));
+
+      const results=await Promise.all(updates);
+      const failed=results.find(r=>r.error);
+      if(failed){
+        alert("Déplacement impossible : "+failed.error.message);
+        return;
+      }
+
+      await loadIssue();
+      renderRail();
+    };
+  });
+}
 function renderIdeas(){["arbitrer","garder","reporter"].forEach(c=>document.getElementById(c).innerHTML=ideas.filter(i=>i.column_name===c).map(i=>`<div class="idea" draggable="true" data-idea="${i.id}" onclick="editIdea('${i.id}')"><b>${esc(i.title)}</b><small>${esc(i.rubric)}${i.target_issue?" · "+esc(i.target_issue):""}</small></div>`).join(""));document.querySelectorAll(".idea").forEach(x=>x.ondragstart=e=>e.dataTransfer.setData("idea",x.dataset.idea));document.querySelectorAll(".col").forEach(c=>{c.ondragover=e=>e.preventDefault();c.ondrop=async e=>{e.preventDefault();let id=e.dataTransfer.getData("idea");if(id)await sb.from("ideas").update({column_name:c.dataset.col,updated_by:appMe.display_name}).eq("id",id)}})}
 function iform(i){return `<div class="field"><label>Titre</label><input id="it" value="${esc(i.title)}"></div><div class="grid2"><div class="field"><label>Rubrique</label><select id="ir">${rubOpts(i.rubric)}</select></div><div class="field"><label>Priorité</label><select id="ip">${["Basse","Normale","Haute","Urgente"].map(x=>`<option ${x===i.priority?"selected":""}>${x}</option>`)}</select></div></div><div class="field"><label>Numéro / mois envisagé</label><input id="itg" value="${esc(i.target_issue)}"></div><div class="field"><label>Description / contact / notes</label><textarea id="idesc">${esc(i.description)}</textarea></div>`}
 async function addIdea(c){let {data}=await sb.from("ideas").insert({title:"",rubric:"Actualités",priority:"Normale",column_name:c,created_by:appMe.display_name,updated_by:appMe.display_name}).select().single();ideas.push(data);editIdea(data.id)}
@@ -365,7 +427,32 @@ async function previewPdf(path){
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 async function deleteFile(id,path,pageId){if(!confirm('Supprimer définitivement ce fichier ?'))return;let st=await sb.storage.from('page-files').remove([path]);if(st.error)return alert('Suppression impossible : '+st.error.message);let db=await sb.from('page_files').delete().eq('id',id);if(db.error)return alert('Le fichier a été supprimé du stockage mais pas de la liste : '+db.error.message);await loadPageExtras(pageId);await loadIssue();renderRail()}
-async function postComment(pageId){let body=newComment.value.trim();if(!body)return;let myId=localStorage.getItem("so_user_id");let {data:c,error}=await sb.from('page_comments').insert({page_id:pageId,author_id:myId,body}).select().single();if(error)return alert(error.message);let names=[...body.matchAll(/@([A-Za-z0-9._-]+)/g)].map(m=>m[1].toLowerCase());for(let name of new Set(names)){let u=users.find(x=>x.username.toLowerCase()===name);if(u&&u.id!==myId){let {error:nerr}=await sb.from('notifications').insert({user_id:u.id,actor_id:myId,page_id:pageId,comment_id:c.id,message:body});if(nerr)alert("Notification non envoyée : "+nerr.message)}}await loadPageExtras(pageId);await loadIssue();renderRail();modal.classList.remove("on")}
+async function savePageComment(pageId,body){
+  if(!body)return true;
+  let myId=localStorage.getItem("so_user_id");
+  let {data:c,error}=await sb.from('page_comments').insert({page_id:pageId,author_id:myId,body}).select().single();
+  if(error){alert(error.message);return false}
+  let names=[...body.matchAll(/@([A-Za-z0-9._-]+)/g)].map(m=>m[1].toLowerCase());
+  for(let name of new Set(names)){
+    let u=users.find(x=>x.username.toLowerCase()===name);
+    if(u&&u.id!==myId){
+      let {error:nerr}=await sb.from('notifications').insert({user_id:u.id,actor_id:myId,page_id:pageId,comment_id:c.id,message:body});
+      if(nerr)alert("Notification non envoyée : "+nerr.message);
+    }
+  }
+  return true;
+}
+async function postComment(pageId){
+  let box=document.getElementById("newComment");
+  let body=box?box.value.trim():"";
+  if(!body)return;
+  let ok=await savePageComment(pageId,body);
+  if(!ok)return;
+  await loadPageExtras(pageId);
+  await loadIssue();
+  renderRail();
+  modal.classList.remove("on");
+}
 
 init();
 </script>
