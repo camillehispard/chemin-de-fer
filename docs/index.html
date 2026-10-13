@@ -21,7 +21,7 @@ main{max-width:1600px;margin:auto;padding:20px}.hidden{display:none!important}.t
 }
 .page:nth-child(2n+1){
   margin-left:18px;
-}.page{background:#fff;border:1px solid var(--line);border-top:7px solid var(--rubric,#789);border-radius:13px;padding:11px;min-height:190px;box-shadow:var(--shadow);position:relative}.page.drag{opacity:.35}.page.over{outline:3px dashed #76a7cf}.pnum{font-size:23px;font-weight:950}.rubric{font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:var(--rubric)}.subject{font-weight:850;line-height:1.25;margin-top:6px;min-height:48px}.meta{font-size:11px;color:var(--muted);line-height:1.5}.badge{display:inline-block;background:#edf3f8;border-radius:99px;padding:3px 7px;font-size:10px;font-weight:900}.donecheck{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#16a34a;color:#fff;font-weight:950;font-size:15px}.briefbadge{display:inline-block;background:#fff7ed;border-radius:99px;padding:3px 7px;font-size:10px;font-weight:900}.edit{position:absolute;right:7px;top:7px;padding:5px 7px;background:#f1f5f9}
+}.page{background:#fff;border:1px solid var(--line);border-top:7px solid var(--rubric,#789);border-radius:13px;padding:11px;min-height:190px;box-shadow:var(--shadow);position:relative}.insert-actions{display:flex;gap:3px;margin:29px 0 2px}.insert-actions button{font-size:10px;padding:4px 6px;background:#eaf1f8;color:#214b71}.page.drag{opacity:.35}.page.over{outline:3px dashed #76a7cf}.pnum{font-size:23px;font-weight:950}.rubric{font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:var(--rubric)}.subject{font-weight:850;line-height:1.25;margin-top:6px;min-height:48px}.meta{font-size:11px;color:var(--muted);line-height:1.5}.badge{display:inline-block;background:#edf3f8;border-radius:99px;padding:3px 7px;font-size:10px;font-weight:900}.donecheck{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#16a34a;color:#fff;font-weight:950;font-size:15px}.briefbadge{display:inline-block;background:#fff7ed;border-radius:99px;padding:3px 7px;font-size:10px;font-weight:900}.edit{position:absolute;right:7px;top:7px;padding:5px 7px;background:#f1f5f9}
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.col{background:#eaf0f6;border-radius:13px;padding:11px;min-height:430px}.idea{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}.idea b{display:block}.idea small{color:var(--muted)}
 .modal{display:none;position:fixed;inset:0;background:rgba(15,25,40,.5);z-index:50;align-items:center;justify-content:center;padding:18px}.modal.on{display:flex}.dialog{background:#fff;width:min(700px,100%);max-height:92vh;overflow:auto;border-radius:15px;padding:19px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin:9px 0}.field label{display:block;font-size:11px;font-weight:900;color:var(--muted);margin-bottom:4px}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px}.field textarea{min-height:90px}.foot{display:flex;justify-content:space-between;gap:8px;margin-top:12px}
 #login{max-width:440px;margin:10vh auto;background:#fff;padding:25px;border-radius:16px;box-shadow:var(--shadow)}#login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;margin:10px 0}.notice{padding:10px;border-radius:9px;background:#eef7ff;color:#24537a;font-size:13px}.presence{font-size:12px;color:var(--muted)}
@@ -149,12 +149,12 @@ main{max-width:1600px;margin:auto;padding:20px}.hidden{display:none!important}.t
 <div id="app" class="hidden">
 <header>
  <div class="brand">SO <small>Chemin de fer collaboratif · CORRIGÉ 22/09</small></div>
- <select id="issueSelect"></select><button class="btn" onclick="newIssue()">+ Numéro</button><button class="btn" onclick="editIssue()">✏️ Modifier le numéro</button><button class="btn" onclick="cloneIssue()">Dupliquer structure</button>
+ <select id="issueSelect"></select><button class="btn" onclick="newIssue()">+ Numéro</button><button class="btn" onclick="editIssue()">✏️ Modifier le numéro</button><button class="danger" onclick="deleteIssue()">🗑 Supprimer ce numéro</button><button class="btn" onclick="cloneIssue()">Dupliquer structure</button>
  <span class="grow"></span><button id="bell" class="btn" onclick="showNotifications()">🔔 <b id="bellCount">0</b></button><button id="usersBtn" class="btn hidden" onclick="manageUsers()">Utilisateurs</button><span id="presence" class="presence"></span><button class="btn" onclick="window.print()">PDF</button><button class="btn" onclick="logout()">Déconnexion</button>
 </header>
 <main>
  <div class="tabs"><button class="tab on" data-tab="railP">Chemin de fer</button><button class="tab" data-tab="ideasP">Idées & arbitrages</button><button class="tab" data-tab="searchP">Archives</button></div>
- <section id="railP" class="panel on"><div id="stats" class="stats"></div><div class="toolbar"><input id="filter" class="search" placeholder="Rechercher…"><button class="primary" onclick="addPage()">+ Page</button></div><div id="printTitle" class="print-title"></div><div id="rail" class="rail"></div></section>
+ <section id="railP" class="panel on"><div id="stats" class="stats"></div><div class="toolbar"><input id="filter" class="search" placeholder="Rechercher…"><button class="primary" onclick="addPage()">+ Page</button><button class="btn" onclick="chooseInsertPage()">+ Insérer entre deux pages</button></div><div id="printTitle" class="print-title"></div><div id="rail" class="rail"></div></section>
  <section id="ideasP" class="panel"><div class="toolbar"><button class="primary" onclick="addIdea('arbitrer')">+ Proposition</button></div><div class="cols"><div class="col" data-col="arbitrer"><h3>🗳 À arbitrer</h3><div id="arbitrer"></div></div><div class="col" data-col="garder"><h3>💡 Idées à garder</h3><div id="garder"></div></div><div class="col" data-col="reporter"><h3>⏭ Sujets reportés</h3><div id="reporter"></div></div></div></section>
  <section id="searchP" class="panel"><input id="archiveSearch" class="search" style="width:100%" placeholder="Rechercher dans tous les numéros…"><div id="results"></div></section>
 </main></div>
@@ -181,7 +181,7 @@ async function loadUsers(){let r=await sb.from("app_users").select("id,username,
 async function loadAll(){
  let a=await sb.from("magazines").select("*").order("year").order("number");issues=a.data||[];
  if(!issues.length){await seed();a=await sb.from("magazines").select("*").order("year").order("number");issues=a.data||[]}
- current=current||issues.at(-1)?.id; await loadIssue(); let c=await sb.from("ideas").select("*").order("created_at");ideas=c.data||[];render()
+ current=issues.some(x=>x.id===current)?current:(issues.at(-1)?.id||null);if(current)await loadIssue();else{pages=[];pageFiles=[];} let c=await sb.from("ideas").select("*").order("created_at");ideas=c.data||[];render()
 }
 async function loadIssue(){if(!current)return;let r=await sb.from("pages").select("*").eq("magazine_id",current).order("position");pages=r.data||[]; pages.sort((a,b)=>{const cover=Math.max(0,...pages.map(p=>Number(p.page_number)||0));const na=Number(a.page_number)||0,nb=Number(b.page_number)||0;if(na===cover&&nb!==cover)return -1;if(nb===cover&&na!==cover)return 1;return na-nb});if(pages.length){let f=await sb.from("page_files").select("id,page_id,kind,file_name,storage_path,uploaded_by,created_at,taken").in("page_id",pages.map(p=>p.id));if(f.error){console.error("Lecture page_files:",f.error);pageFiles=[]}else pageFiles=f.data||[]}else pageFiles=[]}
 // Renumérotation automatique : la dernière page (4e de couverture) reste affichée en premier.
@@ -214,7 +214,7 @@ function renderRail(){
   let mag=issues.find(x=>x.id===current);if(mag&&document.getElementById("printTitle")){let d=mag.mayor_review_date?new Date(mag.mayor_review_date+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}):"Non renseignée";document.getElementById("printTitle").innerHTML=`<div class="mag-title">SO MAG — N° ${mag.number}</div><div class="mag-subtitle">${esc(mag.month||"")} ${mag.year} · Chemin de fer éditorial</div><div class="mag-review">Relecture avec le Maire : <b>${d}</b></div>`}
 let dossierTitle=(pages.find(p=>p.rubric==="Dossier"&&p.rubric_title)?.rubric_title||"");
   let q=filter.value.toLowerCase(),arr=pages.filter(p=>[p.page_number,p.rubric,p.subject,p.owner,p.status].join(" ").toLowerCase().includes(q));
- rail.innerHTML=arr.map(p=>`<article class="page" draggable="true" data-id="${p.id}" style="--rubric:${COLORS[p.rubric]||"#789"}"><button class="edit" onclick="editPage('${p.id}')">✎</button><div class="pnum">p. ${p.page_number}</div><div class="rubric">${esc(p.rubric==="Dossier"&&dossierTitle?`Dossier — ${dossierTitle}`:p.rubric)}</div><div class="subject">${esc(p.subject)||""}</div><div class="meta">${(p.writer||p.owner)?"✍ "+esc(p.writer||p.owner)+"<br>":""}${p.char_count?"⌨ "+p.char_count+" signes<br>":""}${pageFiles.some(f=>f.page_id===p.id&&f.kind==="photo")?"📷 ":""}${pageFiles.some(f=>f.page_id===p.id&&f.kind==="word")?"📄 ":""}${(()=>{let pdf=pageFiles.find(f=>f.page_id===p.id&&f.kind==="pdf");return pdf?`<button type="button" title="Voir le PDF" style="border:0;background:transparent;cursor:pointer;font-size:18px;padding:0 3px" data-path="${encodeURIComponent(pdf.storage_path)}" onclick="event.stopPropagation();previewPdf(decodeURIComponent(this.dataset.path))">📕</button>`:""})()}${p.status==="Terminé"?'<span class="donecheck" title="Terminé">✓</span>':p.status==="Maquetté"?'<span class="donecheck" title="Maquetté">✓</span>':p.status==="En attente de maquettage"?'<span title="En attente de maquettage" style="font-size:20px">👋</span>':(p.status?`<span class="badge">${esc(p.status)}</span>`:"")}${p.brief?' <span class="briefbadge">Brève</span>':""}${p.double_page?" · double page":""}</div></article>`).join("");
+ rail.innerHTML=arr.map(p=>`<article class="page" draggable="true" data-id="${p.id}" style="--rubric:${COLORS[p.rubric]||"#789"}"><button class="edit" onclick="editPage('${p.id}')">✎</button><div class="insert-actions"><button type="button" onclick="insertPageNear('${p.id}',false)" title="Insérer une page avant">+ avant</button><button type="button" onclick="insertPageNear('${p.id}',true)" title="Insérer une page après">+ après</button></div><div class="pnum">p. ${p.page_number}</div><div class="rubric">${esc(p.rubric==="Dossier"&&dossierTitle?`Dossier — ${dossierTitle}`:p.rubric)}</div><div class="subject">${esc(p.subject)||""}</div><div class="meta">${(p.writer||p.owner)?"✍ "+esc(p.writer||p.owner)+"<br>":""}${p.char_count?"⌨ "+p.char_count+" signes<br>":""}${pageFiles.some(f=>f.page_id===p.id&&f.kind==="photo")?"📷 ":""}${pageFiles.some(f=>f.page_id===p.id&&f.kind==="word")?"📄 ":""}${(()=>{let pdf=pageFiles.find(f=>f.page_id===p.id&&f.kind==="pdf");return pdf?`<button type="button" title="Voir le PDF" style="border:0;background:transparent;cursor:pointer;font-size:18px;padding:0 3px" data-path="${encodeURIComponent(pdf.storage_path)}" onclick="event.stopPropagation();previewPdf(decodeURIComponent(this.dataset.path))">📕</button>`:""})()}${p.status==="Terminé"?'<span class="donecheck" title="Terminé">✓</span>':p.status==="Maquetté"?'<span class="donecheck" title="Maquetté">✓</span>':p.status==="En attente de maquettage"?'<span title="En attente de maquettage" style="font-size:20px">👋</span>':(p.status?`<span class="badge">${esc(p.status)}</span>`:"")}${p.brief?' <span class="briefbadge">Brève</span>':""}${p.double_page?" · double page":""}</div></article>`).join("");
  let done=pages.filter(p=>["Maquetté","Terminé"].includes(p.status)).length,review=pages.filter(p=>["En relecture service","En relecture Pierre","À relire"].includes(p.status)).length,photo=pages.filter(p=>p.status==="En attente de photo").length,cmd=pages.filter(p=>p.status==="En attente de maquettage").length,writing=pages.filter(p=>["En recherche d’infos","En cours d’écriture","Relu"].includes(p.status)).length;
  stats.innerHTML=[[cmd,"en attente de maquettage"],[writing,"en cours"],[photo,"attente photo"],[review,"en relecture"],[done,"maquettées"]].map(x=>`<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("");bindDrag()
 }
@@ -300,15 +300,37 @@ function editPage(id){
       await renumberPages(pages.filter(x=>x.id!==id).map(x=>x.id));
     }
   };
-}async function addPage(){
-  const previousIds=pages.map(p=>p.id);
+}
+async function insertPageAt(index){
+  if(!current)return alert("Choisis d’abord un numéro.");
+  const ids=pages.map(p=>p.id);
   const pos=Math.max(0,...pages.map(p=>Number(p.position)||0))+1;
   const num=Math.max(0,...pages.map(p=>Number(p.page_number)||0))+1000;
   const {data,error}=await sb.from("pages").insert({magazine_id:current,page_number:num,position:pos,rubric:"Actualités",subject:"",status:"",updated_by:appMe.display_name}).select().single();
   if(error||!data)return alert("Ajout impossible : "+(error?.message||"Erreur inconnue"));
-  const ok=await renumberPages(previousIds.length?[...previousIds,data.id]:[data.id]);
+  ids.splice(Math.min(Math.max(0,index),ids.length),0,data.id);
+  const ok=await renumberPages(ids);
   if(ok)editPage(data.id);
 }
+function chooseInsertPage(){
+  if(!pages.length)return addPage();
+  const candidates=pages.slice(1);
+  if(!candidates.length)return addPage();
+  const options=candidates.map((p,i)=>`${i+1}. avant la page ${p.page_number} — ${p.subject||p.rubric}`).join("\n");
+  const answer=prompt("Où insérer la nouvelle page ?\nIndique le numéro de ligne (1 à "+candidates.length+") :\n\n"+options, "1");
+  if(answer===null)return;
+  const index=Number(answer);
+  if(!Number.isInteger(index)||index<1||index>candidates.length)return alert("Choisis un numéro de ligne valide.");
+  insertPageAt(index);
+}
+async function insertPageNear(id,after=false){
+  const i=pages.findIndex(p=>p.id===id);
+  if(i<0)return;
+  // La couverture de fin du magazine demeure première dans l'affichage.
+  insertPageAt(i+(after?1:0));
+}
+async function addPage(){return insertPageAt(pages.length)}
+
 function bindDrag(){
   let d=null;
   document.querySelectorAll(".page").forEach(el=>{
@@ -358,6 +380,44 @@ function iform(i){return `<div class="field"><label>Titre</label><input id="it" 
 async function addIdea(c){let {data}=await sb.from("ideas").insert({title:"",rubric:"Actualités",priority:"Normale",column_name:c,created_by:appMe.display_name,updated_by:appMe.display_name}).select().single();ideas.push(data);editIdea(data.id)}
 function editIdea(id){let i=ideas.find(x=>x.id===id);openM("Sujet / idée",iform(i));save.onclick=async()=>{await sb.from("ideas").update({title:it.value,rubric:ir.value,priority:ip.value,target_issue:itg.value,description:idesc.value,updated_by:appMe.display_name}).eq("id",id);closeM()};del.onclick=async()=>{await sb.from("ideas").delete().eq("id",id);closeM()}}
 async function newIssue(){let n=prompt("Numéro ?");if(!n)return;let m=prompt("Mois ?","Octobre"),y=prompt("Année ?","2026");let {data}=await sb.from("magazines").insert({number:+n,month:m,year:+y,created_by:appMe.display_name}).select().single();current=data.id;await loadAll()}
+async function deleteIssue(){
+  const mag=issues.find(x=>x.id===current);
+  if(!mag)return;
+  if(!confirm(`Supprimer DÉFINITIVEMENT SO Mag n° ${mag.number} (${mag.month} ${mag.year}) et toutes ses pages, commentaires et fichiers ? Cette action est irréversible.`))return;
+  const confirmation=prompt(`Pour confirmer, écris SUPPRIMER ${mag.number} :`);
+  if(confirmation!==`SUPPRIMER ${mag.number}`)return alert("Suppression annulée.");
+  const pageIds=pages.map(p=>p.id);
+  if(pageIds.length){
+    // Les commentaires peuvent posséder des notifications associées.
+    const {data:comments,error:readError}=await sb.from("page_comments").select("id").in("page_id",pageIds);
+    if(readError)return alert("Suppression interrompue : "+readError.message);
+    const commentIds=(comments||[]).map(c=>c.id);
+    if(commentIds.length){
+      const n=await sb.from("notifications").delete().in("comment_id",commentIds);
+      if(n.error)return alert("Suppression interrompue : "+n.error.message);
+    }
+    const n=await sb.from("notifications").delete().in("page_id",pageIds);
+    if(n.error)return alert("Suppression interrompue : "+n.error.message);
+    const c=await sb.from("page_comments").delete().in("page_id",pageIds);
+    if(c.error)return alert("Suppression interrompue : "+c.error.message);
+    const {data:files,error:ferr}=await sb.from("page_files").select("storage_path").in("page_id",pageIds);
+    if(ferr)return alert("Suppression interrompue : "+ferr.message);
+    const f=await sb.from("page_files").delete().in("page_id",pageIds);
+    if(f.error)return alert("Suppression interrompue : "+f.error.message);
+    const paths=(files||[]).map(f=>f.storage_path).filter(Boolean);
+    for(let i=0;i<paths.length;i+=100){
+      const r=await sb.storage.from("page-files").remove(paths.slice(i,i+100));
+      if(r.error)console.warn("Fichiers non nettoyés du stockage :",r.error);
+    }
+    const p=await sb.from("pages").delete().eq("magazine_id",current);
+    if(p.error)return alert("Suppression interrompue : "+p.error.message);
+  }
+  const r=await sb.from("magazines").delete().eq("id",current);
+  if(r.error)return alert("Suppression du numéro impossible : "+r.error.message);
+  current=null;pages=[];pageFiles=[];
+  await loadAll();
+  alert("Numéro supprimé.");
+}
 async function editIssue(){let src=issues.find(x=>x.id===current);if(!src)return;let n=prompt("Numéro du magazine ?",src.number);if(n===null)return;let m=prompt("Mois ?",src.month||"");if(m===null)return;let y=prompt("Année ?",src.year);if(y===null)return;let d=prompt("Date de relecture avec le Maire ? (AAAA-MM-JJ)",src.mayor_review_date||"");if(d===null)return;let {error}=await sb.from("magazines").update({number:+n,month:m,year:+y,mayor_review_date:d||null}).eq("id",current);if(error)return alert("Modification impossible : "+error.message);await loadAll()}
   async function cloneIssue(){let src=issues.find(x=>x.id===current),n=prompt("Nouveau numéro ?",String(+src.number+1));if(!n)return;let m=prompt("Mois ?","Octobre"),y=prompt("Année ?",String(src.year)),d=prompt("Date de relecture avec le Maire ? (AAAA-MM-JJ)","");let {data:mag}=await sb.from("magazines").insert({number:+n,month:m,year:+y,mayor_review_date:d||null,created_by:appMe.display_name}).select().single();await sb.from("pages").insert(pages.map((p,i)=>({magazine_id:mag.id,page_number:p.page_number,position:i+1,rubric:p.rubric,subject:["Tribunes","Service public","À votre écoute"].includes(p.rubric)?p.subject:"",status:"",double_page:p.double_page,brief:p.brief||false,updated_by:appMe.display_name})));current=mag.id;await loadAll()}
 async function searchArchive(){let q=(archiveSearch.value||"").trim();if(!q){results.innerHTML="<p>Recherche un sujet dans les anciens numéros.</p>";return}let r=await sb.from("pages").select("*,magazines(number,month,year)").or(`subject.ilike.%${q}%,rubric.ilike.%${q}%,owner.ilike.%${q}%`).limit(100);results.innerHTML=(r.data||[]).map(p=>`<div class="idea"><b>SO Mag ${p.magazines?.number} — p. ${p.page_number} · ${esc(p.rubric)}</b>${esc(p.subject)}<br><small>${esc(p.magazines?.month)} ${p.magazines?.year}</small></div>`).join("")||"<p>Aucun résultat.</p>"}
