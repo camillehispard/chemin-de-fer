@@ -149,7 +149,7 @@ main{max-width:1600px;margin:auto;padding:20px}.hidden{display:none!important}.t
 <div id="app" class="hidden">
 <header>
  <div class="brand">SO <small>Chemin de fer collaboratif · CORRIGÉ 22/09</small></div>
- <select id="issueSelect"></select><button class="btn" onclick="newIssue()">+ Numéro</button><button class="btn" <button class="btn" onclick="editIssue()">✏️ Modifier le numéro</button><button class="btn" onclick="cloneIssue()">Dupliquer structure</button>
+ <select id="issueSelect"></select><button class="btn" onclick="newIssue()">+ Numéro</button><button class="btn" onclick="editIssue()">✏️ Modifier le numéro</button><button class="btn" onclick="cloneIssue()">Dupliquer structure</button>
  <span class="grow"></span><button id="bell" class="btn" onclick="showNotifications()">🔔 <b id="bellCount">0</b></button><button id="usersBtn" class="btn hidden" onclick="manageUsers()">Utilisateurs</button><span id="presence" class="presence"></span><button class="btn" onclick="window.print()">PDF</button><button class="btn" onclick="logout()">Déconnexion</button>
 </header>
 <main>
@@ -183,7 +183,25 @@ async function loadAll(){
  if(!issues.length){await seed();a=await sb.from("magazines").select("*").order("year").order("number");issues=a.data||[]}
  current=current||issues.at(-1)?.id; await loadIssue(); let c=await sb.from("ideas").select("*").order("created_at");ideas=c.data||[];render()
 }
-async function loadIssue(){if(!current)return;let r=await sb.from("pages").select("*").eq("magazine_id",current).order("position");pages=r.data||[]; pages.sort((a,b)=>{const na=Number(a.page_number)||0,nb=Number(b.page_number)||0;if(na===38&&nb!==38)return -1;if(nb===38&&na!==38)return 1;return na-nb});if(pages.length){let f=await sb.from("page_files").select("id,page_id,kind,file_name,storage_path,uploaded_by,created_at,taken").in("page_id",pages.map(p=>p.id));if(f.error){console.error("Lecture page_files:",f.error);pageFiles=[]}else pageFiles=f.data||[]}else pageFiles=[]}
+async function loadIssue(){if(!current)return;let r=await sb.from("pages").select("*").eq("magazine_id",current).order("position");pages=r.data||[]; pages.sort((a,b)=>{const cover=Math.max(0,...pages.map(p=>Number(p.page_number)||0));const na=Number(a.page_number)||0,nb=Number(b.page_number)||0;if(na===cover&&nb!==cover)return -1;if(nb===cover&&na!==cover)return 1;return na-nb});if(pages.length){let f=await sb.from("page_files").select("id,page_id,kind,file_name,storage_path,uploaded_by,created_at,taken").in("page_id",pages.map(p=>p.id));if(f.error){console.error("Lecture page_files:",f.error);pageFiles=[]}else pageFiles=f.data||[]}else pageFiles=[]}
+// Renumérotation automatique : la dernière page (4e de couverture) reste affichée en premier.
+// Deux passes pour éviter les conflits si la base impose des numéros uniques.
+async function renumberPages(orderedIds){
+  if(!orderedIds.length){await loadIssue();renderRail();return true}
+  const coverId=orderedIds[0];
+  const finalOrder=[...orderedIds.slice(1),coverId];
+  const existing=pages.map(p=>Number(p.page_number)||0);
+  const temporaryStart=Math.max(10000,...existing)+orderedIds.length+100;
+  for(let i=0;i<finalOrder.length;i++){
+    const {error}=await sb.from("pages").update({page_number:temporaryStart+i,position:i+1}).eq("id",finalOrder[i]).eq("magazine_id",current);
+    if(error){alert("Renumérotation interrompue : "+error.message);await loadIssue();renderRail();return false}
+  }
+  for(let i=0;i<finalOrder.length;i++){
+    const {error}=await sb.from("pages").update({page_number:i+1,position:i+1}).eq("id",finalOrder[i]).eq("magazine_id",current);
+    if(error){alert("Renumérotation interrompue : "+error.message);await loadIssue();renderRail();return false}
+  }
+  await loadIssue();renderRail();return true;
+}
 function subscribe(){sb.channel("so-live").on("postgres_changes",{event:"*",schema:"public",table:"pages"},async()=>{await loadIssue();renderRail()}).on("postgres_changes",{event:"*",schema:"public",table:"ideas"},async()=>{let r=await sb.from("ideas").select("*").order("created_at");ideas=r.data||[];renderIdeas()}).on("postgres_changes",{event:"*",schema:"public",table:"magazines"},async()=>{let r=await sb.from("magazines").select("*").order("year").order("number");issues=r.data||[];renderSelect()}).on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:`user_id=eq.${localStorage.getItem("so_user_id")}`},async()=>{beep();await refreshNotifications()}).subscribe()}
 async function seed(){
  let {data:m}=await sb.from("magazines").insert({number:48,month:"Septembre",year:2026}).select().single();
@@ -201,7 +219,7 @@ let dossierTitle=(pages.find(p=>p.rubric==="Dossier"&&p.rubric_title)?.rubric_ti
  stats.innerHTML=[[cmd,"en attente de maquettage"],[writing,"en cours"],[photo,"attente photo"],[review,"en relecture"],[done,"maquettées"]].map(x=>`<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join("");bindDrag()
 }
 function rubOpts(v){return Object.keys(COLORS).map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("")}function statOpts(v){return STATUS.map(x=>`<option value="${x}" ${x===v?"selected":""}>${x||"— Aucun statut —"}</option>`).join("")}
-function pform(p){return `<div class="grid2"><div class="field"><label>Page</label><input id="pn" type="number" value="${p.page_number||""}"></div><div class="field"><label>Rubrique</label><select id="pr">${rubOpts(p.rubric)}</select></div></div><div class="field"><label>Nom du dossier thématique</label><input id="prt" value="${esc(p.rubric_title||"")}" placeholder="Ex. La santé à Saint-Ouen"></div><div class="field"><label>Sujet</label><input id="ps" value="${esc(p.subject)}"></div><div class="grid2"><div class="field"><label>Qui écrit l’article ?</label><select id="po"><option value="">—</option>${["Pierre","Camille","Tiphaine","Marine","Rose","Hélène","Giovanni","Marion","Clémence"].map(n=>`<option value="${esc(n)}" ${n===(p.writer||p.owner)?"selected":""}>${esc(n)}</option>`).join("")}</select></div></div><div class="field"><label>Nom du dossier thématique</label><input id="prt" value="${esc(p.rubric_title||"")}" placeholder="Ex. La santé à Saint-Ouen"></div><div class="field"><label>Sujet</label>Calibrage (signes)</label><input id="pc" type="number" value="${p.char_count||""}"></div></div><div class="grid2"><div class="field"><label>Statut</label><select id="pst">${statOpts(p.status)}</select></div><div class="field"><label><input id="pd" type="checkbox" ${p.double_page?"checked":""}> Double page</label><br><label><input id="pb" type="checkbox" ${p.brief?"checked":""}> Brève</label></div></div><div class="field"><label>Notes</label><textarea id="pnotes">${esc(p.notes)}</textarea></div><div id="fileZone"></div><div id="commentZone"></div>`}
+function pform(p){return `<div class="grid2"><div class="field"><label>Page</label><input id="pn" type="number" value="${p.page_number||""}" readonly title="Numérotation automatique"></div><div class="field"><label>Rubrique</label><select id="pr">${rubOpts(p.rubric)}</select></div></div><div class="field"><label>Nom du dossier thématique</label><input id="prt" value="${esc(p.rubric_title||"")}" placeholder="Ex. La santé à Saint-Ouen"></div><div class="field"><label>Sujet</label><input id="ps" value="${esc(p.subject)}"></div><div class="grid2"><div class="field"><label>Qui écrit l’article ?</label><select id="po"><option value="">—</option>${["Pierre","Camille","Tiphaine","Marine","Rose","Hélène","Giovanni","Marion","Clémence"].map(n=>`<option value="${esc(n)}" ${n===(p.writer||p.owner)?"selected":""}>${esc(n)}</option>`).join("")}</select></div></div><div class="field"><label>Nom du dossier thématique</label><input id="prt" value="${esc(p.rubric_title||"")}" placeholder="Ex. La santé à Saint-Ouen"></div><div class="field"><label>Sujet</label>Calibrage (signes)</label><input id="pc" type="number" value="${p.char_count||""}"></div></div><div class="grid2"><div class="field"><label>Statut</label><select id="pst">${statOpts(p.status)}</select></div><div class="field"><label><input id="pd" type="checkbox" ${p.double_page?"checked":""}> Double page</label><br><label><input id="pb" type="checkbox" ${p.brief?"checked":""}> Brève</label></div></div><div class="field"><label>Notes</label><textarea id="pnotes">${esc(p.notes)}</textarea></div><div id="fileZone"></div><div id="commentZone"></div>`}
 function openM(t,b){mtitle.textContent=t;mbody.innerHTML=b;modal.classList.add("on")}function closeM(){modal.classList.remove("on")}
 function editPage(id){
   del.classList.remove("hidden");
@@ -276,13 +294,21 @@ function editPage(id){
 
   del.onclick=async()=>{
     if(confirm("Supprimer cette page ?")){
-      await sb.from("pages").delete().eq("id",id);
+      const {error}=await sb.from("pages").delete().eq("id",id);
+      if(error)return alert("Suppression impossible : "+error.message);
       closeM();
-      await loadIssue();
-      renderRail();
+      await renumberPages(pages.filter(x=>x.id!==id).map(x=>x.id));
     }
   };
-}async function addPage(){let pos=(Math.max(0,...pages.map(p=>p.position))+1),num=(Math.max(0,...pages.map(p=>p.page_number))+1);let {data}=await sb.from("pages").insert({magazine_id:current,page_number:num,position:pos,rubric:"Actualités",subject:"",status:"",updated_by:appMe.display_name}).select().single();await loadIssue();editPage(data.id)}
+}async function addPage(){
+  const previousIds=pages.map(p=>p.id);
+  const pos=Math.max(0,...pages.map(p=>Number(p.position)||0))+1;
+  const num=Math.max(0,...pages.map(p=>Number(p.page_number)||0))+1000;
+  const {data,error}=await sb.from("pages").insert({magazine_id:current,page_number:num,position:pos,rubric:"Actualités",subject:"",status:"",updated_by:appMe.display_name}).select().single();
+  if(error||!data)return alert("Ajout impossible : "+(error?.message||"Erreur inconnue"));
+  const ok=await renumberPages(previousIds.length?[...previousIds,data.id]:[data.id]);
+  if(ok)editPage(data.id);
+}
 function bindDrag(){
   let d=null;
   document.querySelectorAll(".page").forEach(el=>{
@@ -323,20 +349,7 @@ function bindDrag(){
       units.splice(to,0,moved);
 
       const reordered=units.flatMap(u=>u.pages);
-      const updates=reordered.map((p,i)=>sb.from("pages").update({
-        page_number:pageSlots[i],
-        position:i+1
-      }).eq("id",p.id));
-
-      const results=await Promise.all(updates);
-      const failed=results.find(r=>r.error);
-      if(failed){
-        alert("Déplacement impossible : "+failed.error.message);
-        return;
-      }
-
-      await loadIssue();
-      renderRail();
+       await renumberPages(reordered.map(p=>p.id));
     };
   });
 }
